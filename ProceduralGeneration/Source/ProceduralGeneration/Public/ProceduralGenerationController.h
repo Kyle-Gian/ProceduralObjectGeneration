@@ -40,8 +40,8 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void DebugDrawAllPositions();
 	bool CheckObjectIsInRadius(AStaticMeshActor* object);
-	bool MoveObjectInsidePlayerArea(AStaticMeshActor* object);
-	bool ObjectMeshColliderCheck(AStaticMeshActor* object, FVector testPosition);
+	bool FindNewLocationForObject(AStaticMeshActor* object);
+	bool IsCollidingWithObject(AStaticMeshActor* object, FVector testPosition) const;
 	FVector AddVectors(FVector &MainPosition, FVector positionToAdd, FVector* VectorToUpdate);
 	UFUNCTION(BlueprintCallable, CallInEditor)
 	FVector GetLocationInRangeOfPlayer();
@@ -76,7 +76,10 @@ public:
 	
 	UPROPERTY(BlueprintReadWrite,EditAnywhere)
 	float MinDistBetweenSpawnedObjects;
-
+	UPROPERTY(BlueprintReadWrite,EditAnywhere)
+	int MaxRaycastHeight;
+	UPROPERTY(BlueprintReadWrite,EditAnywhere)
+	int MinRaycastHeight;
 	UPROPERTY(EditAnywhere)
 	FVector SpawningDirection;
 	UPROPERTY(VisibleAnywhere)

@@ -34,24 +34,24 @@ void AProceduralGenerationController::SpawnObject(UStaticMesh* object)
 	newActor->SetMobility(EComponentMobility::Movable);
 	newActor->GetStaticMeshComponent()->SetStaticMesh(object);
 	
-	if (SpawnedObjects.Num() <= MaxSpawnedObjects)
+	if (SpawnedObjects.Num() < MaxSpawnedObjects)
 	{
 		ReSpawnObject(newActor);
 		return;
 	}
-
+	
 	DeSpawnObject(newActor);
 
 }
 
 void AProceduralGenerationController::ReSpawnObject(AStaticMeshActor* object)
 {
-	if (InactiveObjects.Find(object) != INDEX_NONE)
-	{
-		InactiveObjects.Remove(object);
-	}
+
+	InactiveObjects.Remove(object);
+	
 	object->SetActorEnableCollision(true);
-	if (MoveObjectInsidePlayerArea(object))
+	
+	if (FindNewLocationForObject(object))
 	{
 		object->SetActorHiddenInGame(false);
 		SpawnedObjects.Add(object);
@@ -62,10 +62,9 @@ void AProceduralGenerationController::ReSpawnObject(AStaticMeshActor* object)
 
 void AProceduralGenerationController::DeSpawnObject(AStaticMeshActor* object)
 {
-	if (SpawnedObjects.Find(object) != INDEX_NONE)
-	{
-		SpawnedObjects.Remove(object);
-	}
+
+	SpawnedObjects.Remove(object);
+	
 	object->SetActorEnableCollision(false);
 	object->SetActorHiddenInGame(true);
 	InactiveObjects.Add(object);
@@ -110,12 +109,12 @@ bool AProceduralGenerationController::CheckObjectIsInRadius(AStaticMeshActor* ob
 	return FVector::Distance(ObjectToGenerateAround->GetActorLocation(), object->GetActorLocation()) < MaxDistanceFromActorToSpawn;
 }
 
-bool AProceduralGenerationController::MoveObjectInsidePlayerArea(AStaticMeshActor* object)
+bool AProceduralGenerationController::FindNewLocationForObject(AStaticMeshActor* object)
 {
 	//TODO: If we break out of loop Do not spawn object
 	float maxTries = 10;
 	FVector newLocation = SafeSpawnPosition();
-	while (ObjectMeshColliderCheck(object, newLocation))
+	while (IsCollidingWithObject(object, newLocation) || newLocation.IsZero())
 	{
 		maxTries--;
 		//SafePositionNotFound
@@ -131,14 +130,14 @@ bool AProceduralGenerationController::MoveObjectInsidePlayerArea(AStaticMeshActo
 	return true;
 }
 
-bool AProceduralGenerationController::ObjectMeshColliderCheck(AStaticMeshActor* object, FVector testPosition)
+bool AProceduralGenerationController::IsCollidingWithObject(AStaticMeshActor* object, FVector testPosition) const
 {
 	//Check if the mesh will collider with other objects
 	TArray<FOverlapResult> hitActors;
 	GetWorld()->OverlapMultiByChannel(hitActors, testPosition, object->GetActorQuat(),ECC_WorldStatic,FCollisionShape::MakeBox(object->GetStaticMeshComponent()->GetStaticMesh()->GetExtendedBounds().BoxExtent + MinDistBetweenSpawnedObjects));
 	for (auto HitActor : hitActors)
 	{
-		if (Cast<AStaticMeshActor>(HitActor.GetActor()))
+		if (Cast<AStaticMeshActor>(HitActor.GetActor()) || Cast<UStaticMeshComponent>(HitActor.GetComponent()))
 		{
 			if (HitActor.GetActor() != Floor)
 			{
@@ -151,9 +150,9 @@ bool AProceduralGenerationController::ObjectMeshColliderCheck(AStaticMeshActor* 
 
 FVector AProceduralGenerationController::AddVectors(FVector &MainPosition, FVector positionToAdd,FVector* VectorToUpdate)
 {
-	float xVal = 0;
-	float yVal = 0;
-	float zVal = 0;
+	float xVal;
+	float yVal;
+	float zVal;
 
 	if (positionToAdd.X > 0 && MainPosition.X < 0)
 	{
@@ -191,36 +190,30 @@ FVector AProceduralGenerationController::AddVectors(FVector &MainPosition, FVect
 
 FVector AProceduralGenerationController::GetLocationInRangeOfPlayer()
 {
-	FVector* MiddleLocation = new FVector(ObjectToGenerateAround->GetActorLocation());
+	FVector MiddleLocation = ObjectToGenerateAround->GetActorLocation();
 	
 	if (UseRandomDirection)
 	{
 		float maxDirVal = 1;
 		DirectionToSpawn.X = FMath::FRandRange(-maxDirVal, maxDirVal);
+		maxDirVal -= abs(DirectionToSpawn.X);
 		DirectionToSpawn.Y = FMath::FRandRange(-maxDirVal, maxDirVal);
-		DirectionToSpawn.Z = FMath::FRandRange(0, maxDirVal);
+		maxDirVal -= abs(DirectionToSpawn.Y);
+		DirectionToSpawn.Z = FMath::FRandRange(0, 0);
 	}
 	DirectionToSpawn.Normalize();
+	PointOnExclusionZone.Z = MiddleLocation.Z;
 
-	SpawningDirection = (DirectionToSpawn * (ExclusionZone * 3));
-
-	//AddVectors(*MiddleLocation, SpawningDirection,&PointOnExclusionZone);
-	PointOnExclusionZone.Z = MiddleLocation->Z;
-	//float DistToExclusionZone = FVector::Distance(*MiddleLocation, PointOnExclusionZone);
-
-	//float DistanceBetweenExclusionMax = DistToExclusionZone - MaxDistanceFromActorToSpawn;
-	//FVector* directionFromPlayer = new FVector(DirectionToSpawn * DistanceBetweenExclusionMax);
 	float RandDistBetweenExclusions = FMath::RandRange(ExclusionZone, MaxDistanceFromActorToSpawn);
 	FVector SpawnPosition = (DirectionToSpawn * RandDistBetweenExclusions);
-	//PointOnMaxRadius = *MiddleLocation + (DirectionToSpawn * RandDistBetweenExclusions);
-	AddVectors(*MiddleLocation,SpawnPosition ,&NewObjectSpawnLocation);
-	//AddVectors(*MiddleLocation, PointOnMaxRadius,&NewObjectSpawnLocation);
-	//NewObjectSpawnLocation = *MiddleLocation + (DirectionToSpawn * RandDistBetweenExclusions);
-	//NewObjectSpawnLocation = PointOnExclusionZone + ((PointOnMaxRadius - PointOnExclusionZone) * RandDistBetweenExclusions);
-	NewObjectSpawnLocation.Z = MiddleLocation->Z;
+	AddVectors(MiddleLocation,SpawnPosition ,&NewObjectSpawnLocation);
+	NewObjectSpawnLocation.Z = MiddleLocation.Z;
+	if (FVector::Distance(MiddleLocation, NewObjectSpawnLocation) < ExclusionZone)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Text, %s %s %s"),
+	   *MiddleLocation.ToString(),*SpawnPosition.ToString(),*NewObjectSpawnLocation.ToString());
+	}
 
-	UE_LOG(LogTemp, Warning, TEXT("Text, %s %s %s"),
-		   *MiddleLocation->ToString(),*SpawnPosition.ToString(),*NewObjectSpawnLocation.ToString());
 	
 	return NewObjectSpawnLocation;
 }
@@ -229,12 +222,13 @@ FVector AProceduralGenerationController::SafeSpawnPosition()
 {
 	FHitResult hitResult;
 	FVector LocationToCheck = GetLocationInRangeOfPlayer();
-	FVector EndLocation = FVector(LocationToCheck.X,LocationToCheck.Y,LocationToCheck.Z - 20000);
-	LocationToCheck.Z += 20000;
-	DrawDebugLine(GetWorld(),LocationToCheck,EndLocation,FColor::Red,false,5);
+	FVector EndLocation = FVector(LocationToCheck.X,LocationToCheck.Y,LocationToCheck.Z - MinRaycastHeight);
+	LocationToCheck.Z += MaxRaycastHeight;
+	//DrawDebugLine(GetWorld(),LocationToCheck,EndLocation,FColor::Red,false,5);
 	if (GetWorld()->LineTraceSingleByChannel(hitResult,LocationToCheck, EndLocation,ECC_WorldStatic))
 	{
-		return hitResult.Location;
+		LocationToCheck.Z = hitResult.Location.Z;
+		return LocationToCheck;
 	}
 
 	return FVector::ZeroVector;
@@ -267,10 +261,10 @@ void AProceduralGenerationController::Tick(float DeltaTime)
 				{
 					AStaticMeshActor* newObject = InactiveObjects[FMath::FRandRange(0, InactiveObjects.Num() - 1)];
 					ReSpawnObject(newObject);
-					if (!MoveObjectInsidePlayerArea(newObject))
-					{
-						DeSpawnObject(newObject);
-					}
+					//if (!MoveObjectInsidePlayerArea(newObject))
+					//{
+						//DeSpawnObject(newObject);
+					//}
 				}
 
 			}
