@@ -8,7 +8,7 @@
 #include "GameFramework/Actor.h"
 #include "ProceduralGenerationController.generated.h"
 
-USTRUCT()
+USTRUCT(BlueprintType)
 struct FSpawnableObjects
 {
 	GENERATED_BODY()
@@ -26,26 +26,33 @@ class PROCEDURALGENERATION_API AProceduralGenerationController : public AActor
 public:	
 	// Sets default values for this actor's properties
 	AProceduralGenerationController();
+	
+	UFUNCTION(BlueprintCallable, CallInEditor)
+	void CreateAndPlaceItems();
 
+	UFUNCTION(BlueprintCallable, CallInEditor)
+	void RunGenerationController();
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-
-	void CreateExclusionZone();
+	UFUNCTION(BlueprintCallable)
+	void DebugDrawAllPositions();
+	
+	
+private:
+	//Utilities to spawn and respawn objects
 	void SpawnObject(UStaticMesh* object);
 	void ReSpawnObject(AStaticMeshActor* object);
 	void DeSpawnObject(AStaticMeshActor* object);
+	void FindLocationInExclusionRange();
+	void SafeSpawnPosition();
 	void DespawnObjectsFromList();
 	void GenerateObjects();
-	UFUNCTION(BlueprintCallable)
-	void DebugDrawAllPositions();
+
 	bool CheckObjectIsInRadius(AStaticMeshActor* object);
 	bool FindNewLocationForObject(AStaticMeshActor* object);
 	bool IsCollidingWithObject(AStaticMeshActor* object, FVector testPosition) const;
 	FVector AddVectors(FVector &MainPosition, FVector positionToAdd, FVector* VectorToUpdate);
-	UFUNCTION(BlueprintCallable, CallInEditor)
-	FVector GetLocationInRangeOfPlayer();
-	FVector SafeSpawnPosition();
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -55,7 +62,7 @@ public:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	AActor* ObjectToGenerateAround;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<FSpawnableObjects> ObjectMeshesToSpawn;
 
 	UPROPERTY(VisibleAnywhere)
@@ -75,21 +82,21 @@ public:
 	float MaxDistanceFromActorToSpawn;
 	
 	UPROPERTY(BlueprintReadWrite,EditAnywhere)
-	float MinDistBetweenSpawnedObjects;
+	float MinDistBetweenSpawnedObjects = 50;
 	UPROPERTY(BlueprintReadWrite,EditAnywhere)
-	int MaxRaycastHeight;
+	int MaxSpawningHeight = 2000;
 	UPROPERTY(BlueprintReadWrite,EditAnywhere)
-	int MinRaycastHeight;
-	UPROPERTY(EditAnywhere)
-	FVector SpawningDirection;
-	UPROPERTY(VisibleAnywhere)
-	FVector PointOnExclusionZone;
+	int MinSpawningHeight = 2000;
 
-	UPROPERTY(VisibleAnywhere)
-	FVector PointOnMaxRadius;
+
 	UPROPERTY(BlueprintReadWrite,EditAnywhere)
-	bool UseRandomDirection;
+	bool SpawnInsideExclusionOnStart;
+protected:
 	UPROPERTY(BlueprintReadWrite,EditAnywhere)
+	bool AllowDebug;
+
+private:
 	FVector DirectionToSpawn;
-	FVector NewObjectSpawnLocation;
+	FVector* NewObjectSpawnLocation = new FVector;
+
 };
