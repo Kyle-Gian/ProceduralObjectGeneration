@@ -8,13 +8,9 @@ ARoad::ARoad()
 {
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-	if (!Root)
-		Root = CreateDefaultSubobject<USceneComponent>("Root");
 
-	if (!PathSpline)
-		PathSpline = CreateDefaultSubobject<USplineComponent>("Path");
+	PathSpline = CreateDefaultSubobject<USplineComponent>("Path");
 
-	RootComponent = Root;
 }
 
 // Called when the game starts or when spawned
@@ -50,7 +46,7 @@ void ARoad::AdjustSplineToMeshWithDistance()
 				float currentNodeDistAlongSpline = PathSpline->GetDistanceAlongSplineAtSplinePoint(currentSplinePointPos);
 				if (currentNodeDistAlongSpline > currentDistanceToCheck)
 				{
-					if ((currentNodeDistAlongSpline - currentDistanceToCheck) > distanceForSplineAdjustment)
+					if (abs(currentNodeDistAlongSpline - currentDistanceToCheck) > distanceForSplineAdjustment && abs(PathSpline->GetDistanceAlongSplineAtSplinePoint(currentSplinePointPos + 1) - currentDistanceToCheck) > distanceForSplineAdjustment)
 					{
 						hitLocation.Z += 10;
 						SplinePointIndexToRemove.Add(currentSplinePointPos);
