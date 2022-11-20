@@ -18,7 +18,6 @@ AProceduralGenerationController::AProceduralGenerationController()
 void AProceduralGenerationController::BeginPlay()
 {
 	Super::BeginPlay();
-	CreateAndPlaceItems();
 }
 
 void AProceduralGenerationController::SpawnObject(UStaticMesh* object)
@@ -282,6 +281,5 @@ void AProceduralGenerationController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	
-	RunGenerationController();
 }
 
