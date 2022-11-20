@@ -49,7 +49,6 @@ void ARoad::AdjustSplineToMeshWithDistance()
 					if (abs(currentNodeDistAlongSpline - currentDistanceToCheck) > distanceForSplineAdjustment && abs(PathSpline->GetDistanceAlongSplineAtSplinePoint(currentSplinePointPos + 1) - currentDistanceToCheck) > distanceForSplineAdjustment)
 					{
 						hitLocation.Z += 10;
-						SplinePointIndexToRemove.Add(currentSplinePointPos);
 						PathSpline->AddSplinePointAtIndex(hitLocation, currentSplinePointPos, ESplineCoordinateSpace::World,
 														  true);
 					}
@@ -60,7 +59,6 @@ void ARoad::AdjustSplineToMeshWithDistance()
 		}
 		currentDistanceToCheck += distanceForSplineAdjustment;
 	}
-//RemoveSplinePointsAfterSplineAdjustment();
 }
 
 void ARoad::AdjustSplineToMeshWithNodePositions()
@@ -94,15 +92,6 @@ FVector ARoad::GetHitPositionOnMesh(FVector positionToCheck)
 		return hitResult.Location;
 	}
 	return FVector::ZeroVector;
-}
-
-void ARoad::RemoveSplinePointsAfterSplineAdjustment()
-{
-	for (auto PointPos : SplinePointIndexToRemove)
-	{
-		PathSpline->RemoveSplinePoint(PointPos);
-	}
-	SplinePointIndexToRemove.Empty();
 }
 
 // Called every frame

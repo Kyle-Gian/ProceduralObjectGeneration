@@ -19,12 +19,11 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-	UFUNCTION(CallInEditor)
+	UFUNCTION(CallInEditor,BlueprintCallable, Category = "SplineEditorTool")
 	void AdjustSplineToMeshWithDistance();
-	UFUNCTION(CallInEditor)
+	UFUNCTION(CallInEditor,BlueprintCallable, Category = "SplineEditorTool")
 	void AdjustSplineToMeshWithNodePositions();
 	FVector GetHitPositionOnMesh(FVector PositionToCheck);
-	void RemoveSplinePointsAfterSplineAdjustment();
 
 	UPROPERTY(EditAnywhere)
 	float distanceForSplineAdjustment = 1000;
@@ -34,9 +33,6 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	UPROPERTY(VisibleAnywhere)
 	USplineComponent* PathSpline;
-	UPROPERTY()
-	USceneComponent* Root;
-	TArray<int> SplinePointIndexToRemove;
 
 	
 
