@@ -24,5 +24,9 @@
 			"Name": "EditorScriptingUtilities",
 			"Enabled": true
 		}
+	],
+	"TargetPlatforms": [
+		"AllDesktop",
+		"WindowsNoEditor"
 	]
 }

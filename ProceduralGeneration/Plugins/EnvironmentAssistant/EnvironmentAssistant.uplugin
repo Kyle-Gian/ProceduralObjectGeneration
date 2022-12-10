@@ -18,7 +18,9 @@
 		{
 			"Name": "EnvironmentAssistant",
 			"Type": "Runtime",
-			"LoadingPhase": "Default"
+			"LoadingPhase": "Default",
+			"WhitelistPlatforms":
+			["Win64", "Android", "Win32"]
 		}
 	]
 }

@@ -2,7 +2,8 @@
 
 
 #include "EnvironmentController.h"
-
+#include "Engine/StaticMeshActor.h"
+#include "Components/StaticMeshComponent.h"
 #include "DrawDebugHelpers.h"
 #include "Landscape.h"
 
@@ -25,15 +26,19 @@ void AEnvironmentController::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
-void AEnvironmentController::SpawnObject(UStaticMesh* object)
+void AEnvironmentController::SpawnObject(FSpawnableMeshes* object)
 {
 	if (!object)
 		return;
 
 	AStaticMeshActor* newActor = GetWorld()->SpawnActor<AStaticMeshActor>();
-	newActor->GetStaticMeshComponent()->SetStaticMesh(object);
+	newActor->GetStaticMeshComponent()->SetStaticMesh(object->Object);
 	newActor->SetMobility(EComponentMobility::Movable);
-	newActor->GetStaticMeshComponent()->SetStaticMesh(object);
+	newActor->GetStaticMeshComponent()->SetStaticMesh(object->Object);
+	FVector meshOffset = newActor->GetStaticMeshComponent()->GetRelativeLocation();
+	meshOffset = meshOffset + object->HeightAdjustment;
+	
+	newActor->GetStaticMeshComponent()->SetRelativeLocation(meshOffset);
 
 	if (SpawnedObjects.Num() < MaxSpawnedObjects)
 	{
@@ -84,7 +89,7 @@ void AEnvironmentController::GenerateObjects()
 	{
 		for (int i = 0; i < SpawnableObjects.MaxQuantity; i++)
 		{
-			SpawnObject(SpawnableObjects.Object);
+			SpawnObject(&SpawnableObjects);
 		}
 	}
 }
