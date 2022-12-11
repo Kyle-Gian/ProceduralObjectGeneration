@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright 2022, Kyle Gian, All rights reserved
 
 
 #include "EnvironmentObject.h"
@@ -17,6 +17,24 @@ void AEnvironmentObject::Initialize(UStaticMesh* mesh, float offset)
 	StaticMesh->SetStaticMesh(mesh);
 	HeightOffset = offset;
 	StaticMesh->SetRelativeLocation(StaticMesh->GetRelativeLocation() + HeightOffset);
+}
+
+void AEnvironmentObject::MoveObject(FVector newLocation)
+{
+	newLocation.Z += HeightOffset;
+	SetActorLocation(newLocation);
+}
+
+void AEnvironmentObject::HideObject()
+{
+	SetActorEnableCollision(false);
+	SetActorHiddenInGame(true);
+}
+
+void AEnvironmentObject::UnHideObject()
+{
+	SetActorEnableCollision(true);
+	SetActorHiddenInGame(false);
 }
 
 // Called when the game starts or when spawned

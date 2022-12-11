@@ -47,8 +47,7 @@ void AEnvironmentController::ReSpawnObject(AEnvironmentObject* object)
 {
 	InactiveObjects.Remove(object);
 	//Enabled after Spawn
-	object->SetActorEnableCollision(true);
-	object->SetActorHiddenInGame(false);
+	object->UnHideObject();
 
 	if (FindNewLocationForObject(object))
 	{
@@ -62,8 +61,7 @@ void AEnvironmentController::ReSpawnObject(AEnvironmentObject* object)
 void AEnvironmentController::DeSpawnObject(AEnvironmentObject* object)
 {
 	SpawnedObjects.Remove(object);
-	object->SetActorEnableCollision(false);
-	object->SetActorHiddenInGame(true);
+	object->HideObject();
 	InactiveObjects.Add(object);
 }
 
@@ -144,8 +142,7 @@ bool AEnvironmentController::FindNewLocationForObject(AEnvironmentObject* object
 		if (!NewObjectSpawnLocation->IsZero())
 			itemPlacementFailed = IsCollidingWithObject(object, *NewObjectSpawnLocation);
 	}
-	NewObjectSpawnLocation->Z += object->HeightOffset;
-	object->SetActorLocation(*NewObjectSpawnLocation);
+	object->MoveObject(*NewObjectSpawnLocation);
 	return true;
 }
 
