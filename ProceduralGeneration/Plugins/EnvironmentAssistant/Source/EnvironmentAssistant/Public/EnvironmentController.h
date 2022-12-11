@@ -10,31 +10,13 @@
 #include "EnvironmentController.generated.h"
 
 USTRUCT(BlueprintType)
-struct FSpawnableMeshesEditorView
+struct FSpawnableMeshes
 {
 	GENERATED_BODY()
 	UPROPERTY(EditAnywhere, meta=(ToolTip="Static mesh to spawn"), Category="SpawnableObject")
 	UStaticMesh* Object;
 	UPROPERTY(EditAnywhere, meta=(ToolTip="Quantity to spawn"), Category="SpawnableObject")
 	int MaxQuantity = 1;
-	UPROPERTY(EditAnywhere, meta=(ToolTip="Only required if the static mesh origin is not on the bottom of the mesh"), Category="SpawnableObject")
-	float HeightAdjustment = 0;
-};
-
-USTRUCT(BlueprintType)
-struct FGeneratedObjects
-{
-	GENERATED_BODY()
-	FGeneratedObjects();
-
-	FGeneratedObjects(AStaticMeshActor* object, float height)
-	{
-		Object = object;
-		HeightAdjustment = height;
-	}
-
-	UPROPERTY(EditAnywhere, meta=(ToolTip="Spawned Actor in Scene"), Category="SpawnableObject")
-	AStaticMeshActor* Object;
 	UPROPERTY(EditAnywhere, meta=(ToolTip="Only required if the static mesh origin is not on the bottom of the mesh"), Category="SpawnableObject")
 	float HeightAdjustment = 0;
 };
@@ -47,26 +29,24 @@ class ENVIRONMENTASSISTANT_API AEnvironmentController : public AActor
 public:	
 	// Sets default values for this actor's properties
 	AEnvironmentController();
-protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
-	UFUNCTION(BlueprintCallable, Category="EnvironmentAssistant/Debug")
-	void DebugDrawAllPositions();
-
 	UFUNCTION(BlueprintCallable, Category="EnvironmentAssistant")
 	void CreateAndPlaceItems();
 
 	UFUNCTION(BlueprintCallable,Category="EnvironmentAssistant")
 	void RunGenerationController();
-	
+protected:
+	// Called when the game starts or when spawned
+	virtual void BeginPlay() override;
+	UFUNCTION(BlueprintCallable, Category="EnvironmentAssistant/Debug")
+	void DebugDrawAllPositions();
 	void ClearObjectArrays();
 	
 	
 private:
 	//Utilities to spawn and respawn objects
-	void SpawnObject(FSpawnableMeshesEditorView* object); // Creates a StaticMeshActor to spawn in the world
-	void ReSpawnObject(FGeneratedObjects* object); // relocate object in the world
-	void DeSpawnObject(FGeneratedObjects* object); //Remove object from world
+	void SpawnObject(FSpawnableMeshes* object); // Creates a StaticMeshActor to spawn in the world
+	void ReSpawnObject(AStaticMeshActor* object); // relocate object in the world
+	void DeSpawnObject(AStaticMeshActor* object); //Remove object from world
 	void FindLocationInExclusionRange(); //Find random location within given parameters
 	void FindNewSpawnPosition();
 	void DespawnObjectsFromList();
@@ -85,14 +65,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ToolTip="Used as the center position to place objects around"), Category="EnvironmentAssistant")
 	AActor* ObjectToGenerateAround;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite , meta=(ToolTip="List of static meshes that will be spawned, includes a quantity to spawn for each Mesh"), Category="EnvironmentAssistant")
-	TArray<FSpawnableMeshesEditorView> ObjectMeshesToSpawn;
+	TArray<FSpawnableMeshes> ObjectMeshesToSpawn;
 
 	UPROPERTY(VisibleAnywhere, Category="EnvironmentAssistant")
-	TArray<FGeneratedObjects*> SpawnedObjects; //Currently visible in world
+	TArray<AStaticMeshActor*> SpawnedObjects; //Currently visible in world
 	UPROPERTY(VisibleAnywhere, Category="EnvironmentAssistant")
-	TArray<FGeneratedObjects*> InactiveObjects; //objects that are inactive and are used for object pooling 
+	TArray<AStaticMeshActor*> InactiveObjects; //objects that are inactive and are used for object pooling 
 	UPROPERTY()
-	TArray<FGeneratedObjects> ObjectsToDeSpawn; //Cached Objects to be despawned
+	TArray<AStaticMeshActor*> ObjectsToDeSpawn; //Cached Objects to be despawned
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ToolTip="Distance where objects can not spawn within from center position"), Category="EnvironmentAssistant")
 	float ExclusionZone;

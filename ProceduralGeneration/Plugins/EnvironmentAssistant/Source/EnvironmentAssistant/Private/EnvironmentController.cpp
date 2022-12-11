@@ -26,33 +26,35 @@ void AEnvironmentController::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
-void AEnvironmentController::SpawnObject(FSpawnableMeshesEditorView* object)
+void AEnvironmentController::SpawnObject(FSpawnableMeshes* object)
 {
 	if (!object)
 		return;
+
 	AStaticMeshActor* newActor = GetWorld()->SpawnActor<AStaticMeshActor>();
 	newActor->GetStaticMeshComponent()->SetStaticMesh(object->Object);
 	newActor->SetMobility(EComponentMobility::Movable);
 	newActor->GetStaticMeshComponent()->SetStaticMesh(object->Object);
-
-	FGeneratedObjects* newObject = new FGeneratedObjects(newActor,object->HeightAdjustment);
-
+	FVector meshOffset = newActor->GetStaticMeshComponent()->GetRelativeLocation();
+	meshOffset = meshOffset + object->HeightAdjustment;
+	
+	newActor->GetStaticMeshComponent()->SetRelativeLocation(meshOffset);
 
 	if (SpawnedObjects.Num() < MaxSpawnedObjects)
 	{
-		ReSpawnObject(newObject);
+		ReSpawnObject(newActor);
 		return;
 	}
 	//No spawn location was found Despawn the Mesh or reached max spawned items
-	DeSpawnObject(newObject);
+	DeSpawnObject(newActor);
 }
 
-void AEnvironmentController::ReSpawnObject(FGeneratedObjects* object)
+void AEnvironmentController::ReSpawnObject(AStaticMeshActor* object)
 {
 	InactiveObjects.Remove(object);
 	//Enabled after Spawn
-	object.Object->SetActorEnableCollision(true);
-	object.Object->SetActorHiddenInGame(false);
+	object->SetActorEnableCollision(true);
+	object->SetActorHiddenInGame(false);
 
 	if (FindNewLocationForObject(object))
 	{
@@ -63,7 +65,7 @@ void AEnvironmentController::ReSpawnObject(FGeneratedObjects* object)
 	DeSpawnObject(object);
 }
 
-void AEnvironmentController::DeSpawnObject(FGeneratedObjects* object)
+void AEnvironmentController::DeSpawnObject(AStaticMeshActor* object)
 {
 	SpawnedObjects.Remove(object);
 	object->SetActorEnableCollision(false);
