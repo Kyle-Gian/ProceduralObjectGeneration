@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "EnvironmentObject.h"
 #include "Engine/StaticMeshActor.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
@@ -45,16 +46,16 @@ protected:
 private:
 	//Utilities to spawn and respawn objects
 	void SpawnObject(FSpawnableMeshes* object); // Creates a StaticMeshActor to spawn in the world
-	void ReSpawnObject(AStaticMeshActor* object); // relocate object in the world
-	void DeSpawnObject(AStaticMeshActor* object); //Remove object from world
+	void ReSpawnObject(AEnvironmentObject* object); // relocate object in the world
+	void DeSpawnObject(AEnvironmentObject* object); //Remove object from world
 	void FindLocationInExclusionRange(); //Find random location within given parameters
 	void FindNewSpawnPosition();
 	void DespawnObjectsFromList();
 	void GenerateObjects();
 
-	bool CheckObjectIsInRadius(AStaticMeshActor* object);
-	bool FindNewLocationForObject(AStaticMeshActor* object);
-	bool IsCollidingWithObject(AStaticMeshActor* object, FVector testPosition) const;
+	bool CheckObjectIsInRadius(AEnvironmentObject* object);
+	bool FindNewLocationForObject(AEnvironmentObject* object);
+	bool IsCollidingWithObject(AEnvironmentObject* object, FVector testPosition) const;
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -68,11 +69,11 @@ public:
 	TArray<FSpawnableMeshes> ObjectMeshesToSpawn;
 
 	UPROPERTY(VisibleAnywhere, Category="EnvironmentAssistant")
-	TArray<AStaticMeshActor*> SpawnedObjects; //Currently visible in world
+	TArray<AEnvironmentObject*> SpawnedObjects; //Currently visible in world
 	UPROPERTY(VisibleAnywhere, Category="EnvironmentAssistant")
-	TArray<AStaticMeshActor*> InactiveObjects; //objects that are inactive and are used for object pooling 
+	TArray<AEnvironmentObject*> InactiveObjects; //objects that are inactive and are used for object pooling 
 	UPROPERTY()
-	TArray<AStaticMeshActor*> ObjectsToDeSpawn; //Cached Objects to be despawned
+	TArray<AEnvironmentObject*> ObjectsToDeSpawn; //Cached Objects to be despawned
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ToolTip="Distance where objects can not spawn within from center position"), Category="EnvironmentAssistant")
 	float ExclusionZone;

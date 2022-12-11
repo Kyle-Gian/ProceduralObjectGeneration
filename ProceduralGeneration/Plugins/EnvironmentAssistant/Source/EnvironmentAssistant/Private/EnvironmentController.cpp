@@ -31,15 +31,9 @@ void AEnvironmentController::SpawnObject(FSpawnableMeshes* object)
 	if (!object)
 		return;
 
-	AStaticMeshActor* newActor = GetWorld()->SpawnActor<AStaticMeshActor>();
-	newActor->GetStaticMeshComponent()->SetStaticMesh(object->Object);
-	newActor->SetMobility(EComponentMobility::Movable);
-	newActor->GetStaticMeshComponent()->SetStaticMesh(object->Object);
-	FVector meshOffset = newActor->GetStaticMeshComponent()->GetRelativeLocation();
-	meshOffset = meshOffset + object->HeightAdjustment;
+	AEnvironmentObject* newActor = GetWorld()->SpawnActor<AEnvironmentObject>();
+	newActor->Initialize(object->Object, object->HeightAdjustment);
 	
-	newActor->GetStaticMeshComponent()->SetRelativeLocation(meshOffset);
-
 	if (SpawnedObjects.Num() < MaxSpawnedObjects)
 	{
 		ReSpawnObject(newActor);
@@ -49,7 +43,7 @@ void AEnvironmentController::SpawnObject(FSpawnableMeshes* object)
 	DeSpawnObject(newActor);
 }
 
-void AEnvironmentController::ReSpawnObject(AStaticMeshActor* object)
+void AEnvironmentController::ReSpawnObject(AEnvironmentObject* object)
 {
 	InactiveObjects.Remove(object);
 	//Enabled after Spawn
@@ -65,7 +59,7 @@ void AEnvironmentController::ReSpawnObject(AStaticMeshActor* object)
 	DeSpawnObject(object);
 }
 
-void AEnvironmentController::DeSpawnObject(AStaticMeshActor* object)
+void AEnvironmentController::DeSpawnObject(AEnvironmentObject* object)
 {
 	SpawnedObjects.Remove(object);
 	object->SetActorEnableCollision(false);
@@ -125,13 +119,13 @@ void AEnvironmentController::ClearObjectArrays()
 	ObjectsToDeSpawn.Empty();
 }
 
-bool AEnvironmentController::CheckObjectIsInRadius(AStaticMeshActor* object)
+bool AEnvironmentController::CheckObjectIsInRadius(AEnvironmentObject* object)
 {
 	return FVector::Distance(ObjectToGenerateAround->GetActorLocation(), object->GetActorLocation()) <
 		MaxDistanceFromActorToSpawn;
 }
 
-bool AEnvironmentController::FindNewLocationForObject(AStaticMeshActor* object)
+bool AEnvironmentController::FindNewLocationForObject(AEnvironmentObject* object)
 {
 	// Try and find a location to spawn the object at, if None are found do not spawn and add to non spawned list
 	float maxTries = 10;
@@ -150,15 +144,15 @@ bool AEnvironmentController::FindNewLocationForObject(AStaticMeshActor* object)
 		if (!NewObjectSpawnLocation->IsZero())
 			itemPlacementFailed = IsCollidingWithObject(object, *NewObjectSpawnLocation);
 	}
-
+	NewObjectSpawnLocation->Z += object->HeightOffset;
 	object->SetActorLocation(*NewObjectSpawnLocation);
 	return true;
 }
 
-bool AEnvironmentController::IsCollidingWithObject(AStaticMeshActor* object, FVector testPosition) const
+bool AEnvironmentController::IsCollidingWithObject(AEnvironmentObject* object, FVector testPosition) const
 {
 	FVector positionToCheck = testPosition;
-	FVector ObjectBoxExtents = object->GetStaticMeshComponent()->GetStaticMesh()->GetExtendedBounds().BoxExtent;
+	FVector ObjectBoxExtents = object->GetMesh()->GetStaticMesh()->GetExtendedBounds().BoxExtent;
 	//Check if the mesh will collider with other objects
 	TArray<FOverlapResult> hitActors;
 	GetWorld()->OverlapMultiByChannel(hitActors, positionToCheck, object->GetActorQuat(), ECC_WorldStatic,
@@ -257,7 +251,7 @@ void AEnvironmentController::RunGenerationController()
 			{
 				if (i < InactiveObjects.Num())
 				{
-					AStaticMeshActor* newObject = InactiveObjects[FMath::FRandRange(0, InactiveObjects.Num() - 1)];
+					AEnvironmentObject* newObject = InactiveObjects[FMath::FRandRange(0, InactiveObjects.Num() - 1)];
 					ReSpawnObject(newObject);
 				}
 			}
