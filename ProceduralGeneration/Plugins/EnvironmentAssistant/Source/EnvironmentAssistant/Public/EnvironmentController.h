@@ -22,6 +22,18 @@ struct FSpawnableMeshes
 	float HeightAdjustment = 0;
 };
 
+USTRUCT(BlueprintType)
+struct FSpawnableEnvironmentObject
+{
+	GENERATED_BODY()
+	UPROPERTY(EditAnywhere, meta=(ToolTip="Class type to spawn"), Category="SpawnableClass")
+	TSubclassOf<AEnvironmentObject> ClassToSpawn;
+	UPROPERTY(EditAnywhere, meta=(ToolTip="Quantity to spawn"), Category="SpawnableClass")
+	int MaxQuantity = 1;
+	UPROPERTY(EditAnywhere, meta=(ToolTip="Only required if the static mesh origin is not on the bottom of the mesh"), Category="SpawnableObject")
+	float HeightAdjustment = 0;
+};
+
 UCLASS()
 class ENVIRONMENTASSISTANT_API AEnvironmentController : public AActor
 {
@@ -45,7 +57,8 @@ protected:
 	
 private:
 	//Utilities to spawn and respawn objects
-	void SpawnObject(FSpawnableMeshes* object); // Creates a StaticMeshActor to spawn in the world
+	void SpawnObjectFromMesh(FSpawnableMeshes* object); // Creates a StaticMeshActor to spawn in the world
+	void SpawnObjectFromClass(FSpawnableEnvironmentObject* object); // Creates a StaticMeshActor to spawn in the world
 	void ReSpawnObject(AEnvironmentObject* object); // relocate object in the world
 	void DeSpawnObject(AEnvironmentObject* object); //Remove object from world
 	void FindLocationInExclusionRange(); //Find random location within given parameters
@@ -67,7 +80,8 @@ public:
 	AActor* ObjectToGenerateAround;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite , meta=(ToolTip="List of static meshes that will be spawned, includes a quantity to spawn for each Mesh"), Category="EnvironmentAssistant")
 	TArray<FSpawnableMeshes> ObjectMeshesToSpawn;
-
+	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category="EnvironmentAssistant", meta=(ToolTip="Any class added to this array must derive from EnvironmentObject to be included"))
+	TArray<FSpawnableEnvironmentObject> EnvironmentObjectsToSpawn; //Currently visible in world
 	UPROPERTY(VisibleAnywhere, Category="EnvironmentAssistant")
 	TArray<AEnvironmentObject*> SpawnedObjects; //Currently visible in world
 	UPROPERTY(VisibleAnywhere, Category="EnvironmentAssistant")

@@ -26,13 +26,29 @@ void AEnvironmentController::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
-void AEnvironmentController::SpawnObject(FSpawnableMeshes* object)
+void AEnvironmentController::SpawnObjectFromMesh(FSpawnableMeshes* object)
 {
 	if (!object)
 		return;
 
 	AEnvironmentObject* newActor = GetWorld()->SpawnActor<AEnvironmentObject>();
 	newActor->Initialize(object->Object, object->HeightAdjustment);
+	
+	if (SpawnedObjects.Num() < MaxSpawnedObjects)
+	{
+		ReSpawnObject(newActor);
+		return;
+	}
+	//No spawn location was found Despawn the Mesh or reached max spawned items
+	DeSpawnObject(newActor);
+}
+
+void AEnvironmentController::SpawnObjectFromClass(FSpawnableEnvironmentObject* object)
+{
+	if (!object)
+		return;
+	AEnvironmentObject* newActor = GetWorld()->SpawnActor<AEnvironmentObject>(object->ClassToSpawn);
+	newActor->Initialize(object->ClassToSpawn.GetDefaultObject()->GetMesh()->GetStaticMesh(), object->HeightAdjustment);
 	
 	if (SpawnedObjects.Num() < MaxSpawnedObjects)
 	{
@@ -81,7 +97,15 @@ void AEnvironmentController::GenerateObjects()
 	{
 		for (int i = 0; i < SpawnableObjects.MaxQuantity; i++)
 		{
-			SpawnObject(&SpawnableObjects);
+			SpawnObjectFromMesh(&SpawnableObjects);
+		}
+	}
+
+	for (auto objectToSpawn : EnvironmentObjectsToSpawn)
+	{
+		for (int i = 0; i < objectToSpawn.MaxQuantity; i++)
+		{
+			SpawnObjectFromClass(&objectToSpawn);
 		}
 	}
 }
@@ -149,7 +173,12 @@ bool AEnvironmentController::FindNewLocationForObject(AEnvironmentObject* object
 bool AEnvironmentController::IsCollidingWithObject(AEnvironmentObject* object, FVector testPosition) const
 {
 	FVector positionToCheck = testPosition;
-	FVector ObjectBoxExtents = object->GetMesh()->GetStaticMesh()->GetExtendedBounds().BoxExtent;
+	UStaticMesh* mesh = object->GetMesh()->GetStaticMesh();
+	if (!mesh)
+	{
+		return true;
+	}
+	FVector ObjectBoxExtents = mesh->GetExtendedBounds().BoxExtent;
 	//Check if the mesh will collider with other objects
 	TArray<FOverlapResult> hitActors;
 	GetWorld()->OverlapMultiByChannel(hitActors, positionToCheck, object->GetActorQuat(), ECC_WorldStatic,

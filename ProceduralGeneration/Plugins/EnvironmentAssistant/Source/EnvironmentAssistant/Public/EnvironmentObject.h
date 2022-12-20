@@ -37,6 +37,6 @@ public:
 	float HeightOffset;
 
 protected:
-	UPROPERTY(BlueprintReadOnly, Category="EnvironmentObject")
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category="EnvironmentObject")
 	UStaticMeshComponent* StaticMesh;
 };

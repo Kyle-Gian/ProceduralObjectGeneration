@@ -8,13 +8,17 @@ AEnvironmentObject::AEnvironmentObject()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
-	StaticMesh = CreateDefaultSubobject<UStaticMeshComponent>("ObjectMesh",false);
+	
+    if (!StaticMesh)
+    	StaticMesh = CreateDefaultSubobject<UStaticMeshComponent>("ObjectMesh",false);
 
 }
 
 void AEnvironmentObject::Initialize(UStaticMesh* mesh, float offset)
 {
-	StaticMesh->SetStaticMesh(mesh);
+	if (mesh != NULL)
+		StaticMesh->SetStaticMesh(mesh);
+
 	HeightOffset = offset;
 	StaticMesh->SetRelativeLocation(StaticMesh->GetRelativeLocation() + HeightOffset);
 }
