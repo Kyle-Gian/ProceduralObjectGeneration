@@ -14,16 +14,24 @@ AEnvironmentController::AEnvironmentController()
 	PrimaryActorTick.bCanEverTick = true;
 }
 
+void AEnvironmentController::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+{
+	Super::PostEditChangeProperty(PropertyChangedEvent);
+	ValidateValues();
+}
+
 // Called when the game starts or when spawned
 void AEnvironmentController::BeginPlay()
 {
 	Super::BeginPlay();
+	CreateAndPlaceItems();
 }
 
 // Called every frame
 void AEnvironmentController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	RunGenerationController();
 }
 
 void AEnvironmentController::SpawnObjectFromMesh(FSpawnableMeshes* object)
@@ -139,6 +147,8 @@ void AEnvironmentController::ClearObjectArrays()
 		object->Destroy();
 	}
 	ObjectsToDeSpawn.Empty();
+	SpawnableSurfaceNames.Empty();
+
 }
 
 bool AEnvironmentController::CheckObjectIsInRadius(AEnvironmentObject* object)
@@ -176,25 +186,54 @@ bool AEnvironmentController::IsCollidingWithObject(AEnvironmentObject* object, F
 	UStaticMesh* mesh = object->GetMesh()->GetStaticMesh();
 	if (!mesh)
 	{
-		return true;
+		return false;
 	}
+	
 	FVector ObjectBoxExtents = mesh->GetExtendedBounds().BoxExtent;
 	//Check if the mesh will collider with other objects
 	TArray<FOverlapResult> hitActors;
 	GetWorld()->OverlapMultiByChannel(hitActors, positionToCheck, object->GetActorQuat(), ECC_WorldStatic,
 	                                  FCollisionShape::MakeBox(
 		                                  ObjectBoxExtents + MinDistBetweenSpawnedObjects));
+	if (hitActors.Num() == 0)
+		return true;
+	
+	//Check to see if any of the actors are not a spawnable surface
 	for (auto HitActor : hitActors)
 	{
-		for (auto surface : SpawnableSurfaces)
-		{
-			if (HitActor.GetActor() == surface || Cast<ALandscape>(HitActor.GetActor()))
-			{
-				return false;
-			}
-		}
+		FString actorName = HitActor.GetActor()->GetName();
+
+		if (SpawnableSurfaceNames.Find(actorName) == INDEX_NONE)
+			return true;
 	}
-	return true;
+	
+	return false;
+}
+
+void AEnvironmentController::ValidateValues()
+{
+	if (ExclusionZone >= MaxDistanceFromActorToSpawn)
+	{
+		MaxDistanceFromActorToSpawn = ExclusionZone + 1000;
+		UE_LOG(LogTemp, Warning, TEXT("Text, %hs"),"Exclusion Zone Value must be greater than MaxDistanceFromActorToSpawn"
+);
+	}
+	
+}
+
+void AEnvironmentController::ConvertObjectsToStringArray()
+{
+	//get all names of objects that can be spawned on, used to check for collisions
+	SpawnableSurfaceNames.Empty();
+	
+	for (auto landscape : SpawnableLandscapes)
+	{
+		SpawnableSurfaceNames.Add(landscape->GetName());
+	}
+	for (auto surface : SpawnableSurfaces)
+	{
+		SpawnableSurfaceNames.Add(surface->GetName());
+	}
 }
 
 void AEnvironmentController::FindLocationInExclusionRange()
@@ -221,20 +260,29 @@ void AEnvironmentController::FindLocationInExclusionRange()
 
 void AEnvironmentController::FindNewSpawnPosition()
 {
-	FHitResult hitResult;
-	FindLocationInExclusionRange();
-	FVector EndLocation = FVector(NewObjectSpawnLocation->X, NewObjectSpawnLocation->Y,
-	                              NewObjectSpawnLocation->Z - MinSpawningHeight);
-
-	NewObjectSpawnLocation->Z += MaxSpawningHeight;
-	//DrawDebugLine(GetWorld(),LocationToCheck,EndLocation,FColor::Red,false,5);
-	if (GetWorld()->LineTraceSingleByChannel(hitResult, *NewObjectSpawnLocation, EndLocation, ECC_WorldStatic))
+	if (ObjectToGenerateAround)
 	{
-		NewObjectSpawnLocation->Z = hitResult.Location.Z;
-		return;
+		FHitResult hitResult;
+		FindLocationInExclusionRange();
+		FVector EndLocation = FVector(NewObjectSpawnLocation->X, NewObjectSpawnLocation->Y,
+									  NewObjectSpawnLocation->Z - MinSpawningHeight);
+
+		NewObjectSpawnLocation->Z += MaxSpawningHeight;
+		//DrawDebugLine(GetWorld(),LocationToCheck,EndLocation,FColor::Red,false,5);
+		if (GetWorld()->LineTraceSingleByChannel(hitResult, *NewObjectSpawnLocation, EndLocation, ECC_WorldStatic))
+		{
+			NewObjectSpawnLocation->Z = hitResult.Location.Z;
+			return;
+		}
+
+		*NewObjectSpawnLocation = FVector::ZeroVector;
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Text, %hs"),"Object to spawn around is null."
+	   );
 	}
 
-	*NewObjectSpawnLocation = FVector::ZeroVector;
 }
 
 void AEnvironmentController::CreateAndPlaceItems()
@@ -243,11 +291,13 @@ void AEnvironmentController::CreateAndPlaceItems()
 	ClearObjectArrays();
 	//If Spawn onstart is true store the original exclusion value to set back after items generated
 	float tempExclusion = ExclusionZone;
+	
 	if (SpawnInsideExclusionOnStart)
 	{
 		tempExclusion = ExclusionZone;
 		ExclusionZone = 200;
 	}
+	ConvertObjectsToStringArray();
 
 	GenerateObjects();
 
